@@ -1,0 +1,30 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 0.5em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row > div:first-child {
+  width: 3ch;
+  font-weight: bold;
+}
+
+.header {
+  text-align: center;
+}
+
+.cell {
+  text-align: center;
+}
+
+.answer { color: var(--fg); opacity: 0.5; }
+.answer:hover { opacity: 1; }
+.problem { margin: 2em 0; padding: 1em; border: 1px solid var(--fg); border-radius: 4px; }
+button.small { font-size: 0.8em; padding: 0.2em 0.4em; }
