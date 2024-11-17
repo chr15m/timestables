@@ -7,26 +7,48 @@
 
 (def max-number 12)
 
+(def reward-tiers
+  {1 0
+   2 0
+   3 1
+   4 2
+   5 1
+   6 2
+   7 2
+   8 3
+   9 2
+   10 0
+   11 1
+   12 3})
+
+(def rewards
+  {0 5
+   1 10
+   2 15
+   3 25})
+
 (def initial-state
   {:completed {}
-   :current-problem nil
-   :rewards {1 0.10  ; £0.10 for 1-3 times tables
-             2 0.10
-             3 0.10
-             4 0.20  ; £0.20 for 4-6 times tables
-             5 0.20
-             6 0.20
-             7 0.50  ; £0.50 for 7-9 times tables
-             8 0.50
-             9 0.50
-             10 1.00 ; £1.00 for 10-12 times tables
-             11 1.00
-             12 1.00}})
+   :current-problem nil})
 
-(def state (r/atom initial-state))
+(defn load-state []
+  (let [stored-state (.getItem js/localStorage "times-table-state")]
+    (if stored-state
+      (-> stored-state
+          js/JSON.parse
+          (js->clj :keywordize-keys true))
+      initial-state)))
+
+(defonce state (r/atom (load-state)))
+
+(defn save-state []
+  (.setItem js/localStorage "times-table-state"
+            (-> @state
+                clj->js
+                js/JSON.stringify)))
 
 (defn get-completion-key [x y]
-  (str x "x" y))
+  (keyword (str x "x" y)))
 
 (defn row-completed? [row]
   (every? #(get-in @state [:completed (get-completion-key row %)])
@@ -37,7 +59,8 @@
 
 (defn toggle-completion [x y]
   (swap! state update-in [:completed (get-completion-key x y)]
-         #(if % nil true)))
+         #(if % nil true))
+  (save-state))
 
 (defn generate-problem [row]
   (let [uncompleted (remove #(get-in @state [:completed (get-completion-key row %)])
@@ -59,7 +82,7 @@
   [:div
    [:h1 "Times Tables Tracker"]
    [:div.grid 
-    [:div.header]  ; Empty corner cell
+    [:div.header]
     (for [x (range 1 (inc max-number))]
       [:div.header {:key (str "header-" x)} x])
     (for [x (range 1 (inc max-number))]
@@ -83,7 +106,17 @@
     (for [x (range 1 (inc max-number))]
       (when (row-completed? x)
         [:p {:key (str "reward-" x)}
-         "Row " x ": " (format-currency (get-in @state [:rewards x]))]))]])
+         "Row " x ": " (format-currency
+                         (get rewards
+                              (get reward-tiers x)))]))
+    [:h3 "Total: "
+     (format-currency
+       (apply +
+              (map (fn [i]
+                     (when (row-completed? i)
+                       (get rewards
+                            (get reward-tiers i))))
+                   (range 1 (inc max-number)))))]]])
 
 (rdom/render [times-table]
              (.getElementById js/document "app"))
